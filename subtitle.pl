@@ -8,10 +8,14 @@ use HTML::Parser;
 use Archive::Extract;
 use HTML::Template;
 use URL::Encode qw(url_encode);
+use XML::Simple;
 
 my $cgi = CGI->new;
 my $subtitleSite = 'http://www.tvsubtitles.net';
+my $dataDirectory = 'subtitles';
 my $searchValue = $cgi->param('tvshow');
+my $season = $cgi->param('season');
+my $seasonSearchValue = $cgi->param('tv');
 my $catalog = "tvshows.html";
 my $insideSearchArea = 0;
 my $insideLink = 0;
@@ -21,27 +25,32 @@ my $ua = LWP::UserAgent->new(max_redirect => 0);
 
 print $cgi->header();
 my $template = HTML::Template->new(filename => 'subtitle.html');
-&getAllCatalog();
+
+unless (-f "$dataDirectory/tvShows.txt"){
+	&getAllCatalog();
+	&saveTvShowList();
+}
+@optionList = @{&getTvShowList()};
+
 $template->param(catalogue => \@optionList);
 
 if(defined $searchValue && !($searchValue =~ /^\s*$/gi)){
+	if(defined $season && !($season =~ /^\s*$/gi)){
+		$searchValue =~ s/(tvshow-\d+-)(\d+)(\.html)/${1}${season}${3}/gi;
+	}
 	$template->param(SEARCHING => 1);
 	$template->param(search_value => escapeHTML($searchValue));
 	my $downloadLink = escapeHTML($searchValue);
 	$downloadLink =~ s/tvshow/download/gi;
 	$downloadLink =~ s/\./-fr\./gi;
-	#print "${subtitleSite}/$downloadLink<br/>\n";
 	
 	my $resp = $ua->head("${subtitleSite}/$downloadLink");
-	#print $resp->status_line, "<br/>\n";
 	
 	my $fileLocation = $resp->header('Location');
 	$fileLocation =~ m/[\w\/\-\s_]+\/([\w\.\-\s_]+)$/gi;
 	my $filename = $1;
 	$filename =~ m/([\w\.\-\s_]+)\..+$/gi;
-	my $fileDirectory = $1;
-	
-	#print "filename : ", $filename, "<br/>\n";
+	my $fileDirectory = "${dataDirectory}/$1";
 	
 	unless (-d $fileDirectory){
 	
@@ -98,4 +107,26 @@ sub start1
 	$parse->handler(text => sub{if($insideLink){$hash{'cat_label'}=escapeHTML(shift)}}, 'text');
 	$parse->handler(end => sub{my ($tagname, $parse) = @_; $parse->eof if $tagname eq 'table'; $insideLink = ($tagname ne 'a') if $insideLink}, 'tagname, self');
 	push @optionList, \%hash;
+}
+
+sub saveTvShowList
+{	
+	open my $FH, "> ${dataDirectory}/tvShows.txt" or die "unable to open ${dataDirectory}/tvShows.txt\n";
+	foreach(@optionList){
+		print $FH $_->{'cat_label'}, "@", $_->{'cat_value'},"\n";
+	}
+	close $FH;
+}
+
+sub getTvShowList
+{
+	open my $FH, "< ${dataDirectory}/tvShows.txt" or die "unable to open ${dataDirectory}/tvShows.txt\n";
+	my @tvShowList = ();
+	while(<$FH>){
+		chomp;
+		my @datas = split '@';
+		push @tvShowList, {"cat_value" => $datas[1], "cat_label" => $datas[0]};
+	}
+	close $FH;
+	return \@tvShowList;
 }
