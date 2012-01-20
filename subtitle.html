@@ -2,17 +2,35 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<script type="text/javascript" src="http://localhost/js/jquery-1.7.1.js"></script>
+<script language="Javascript">
+		function displaySeasonList(value){
+			var pattern = /tvshow\-([0-9]+)\-([0-9]+)\.html/;
+			var result = value.match(pattern);
+			var selectBody = "";
+			for(var i = 1; i <= result[2]; i++){
+				selectBody += "<option value='" + i + "'>Season " + i + "</option>\n";
+			}
+			$('#season_choice').html(selectBody);
+			$('#season_choice').css("visibility", "visible");
+		}
+</script>
 <title>subtitle tools</title>
 </head>
 <body>
 <h1>SEARCHING SUBTITLE FOR TV SHOWS !!</h1>
 <form action="subtitle.pl" method="get">
 <div>
-<select name='tvshow'>
+<select name='tvshow' onchange="displaySeasonList($(this).val())">
 <TMPL_LOOP NAME="catalogue">
 	<option value="<TMPL_VAR NAME=cat_value>"><TMPL_VAR NAME=cat_label></option>
 </TMPL_LOOP>
 </select>
+<br/>
+<select id='season_choice' name='season' style="visibility:hidden" onChange="alert('changing')">
+</select>
+<br/>
 <input type="submit" value="search"></input>
 </div>
 <TMPL_IF SEARCHING>
