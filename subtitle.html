@@ -24,11 +24,24 @@
 <div>
 <select name='tvshow' onchange="displaySeasonList($(this).val())">
 <TMPL_LOOP NAME="catalogue">
-	<option value="<TMPL_VAR NAME=cat_value>"><TMPL_VAR NAME=cat_label></option>
+	<TMPL_IF NAME="selected">
+		<option value="<TMPL_VAR NAME=cat_value>" selected><TMPL_VAR NAME=cat_label></option>
+	<TMPL_ELSE>
+		<option value="<TMPL_VAR NAME=cat_value>"><TMPL_VAR NAME=cat_label></option>
+	</TMPL_IF>
 </TMPL_LOOP>
 </select>
 <br/>
-<select id='season_choice' name='season' style="visibility:hidden" onChange="alert('changing')">
+<select id='season_choice' name='season' style="visibility:<TMPL_VAR NAME=season_visibility>">
+<TMPL_IF NAME="define_body">
+	<TMPL_LOOP NAME="seasons">
+	  <TMPL_IF NAME="season_selected">
+		<option value="<TMPL_VAR NAME=season_value>" selected><TMPL_VAR NAME=season_label></option>
+	  <TMPL_ELSE>
+		<option value="<TMPL_VAR NAME=season_value>"><TMPL_VAR NAME=season_label></option>
+	  </TMPL_IF>
+	</TMPL_LOOP>
+</TMPL_IF>
 </select>
 <br/>
 <input type="submit" value="search"></input>

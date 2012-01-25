@@ -25,7 +25,6 @@ my $ua = LWP::UserAgent->new(max_redirect => 0);
 
 print $cgi->header();
 my $template = HTML::Template->new(filename => 'subtitle.html');
-
 unless (-f "$dataDirectory/tvShows.txt"){
 	&getAllCatalog();
 	&saveTvShowList();
@@ -33,13 +32,31 @@ unless (-f "$dataDirectory/tvShows.txt"){
 @optionList = @{&getTvShowList()};
 
 $template->param(catalogue => \@optionList);
+my $season_visibility = "hidden";
+my $define_body;
+if($define_body = (defined $season && !($season =~ /^\s*$/gi))){
+	$season_visibility = "visible";
+}
+
+$template->param(season_visibility => $season_visibility);
+$template->param(define_body => $define_body);
 
 if(defined $searchValue && !($searchValue =~ /^\s*$/gi)){
+	$searchValue =~ /tvshow-\d+-(\d+)\.html/gi;
+	my $seasonNumber = $1;
+	my @seasonList = ();
+	#print "season number  $seasonNumber\n";
+	foreach (1..$seasonNumber){
+		push @seasonList, {season_value => $_, season_label => "season".$_, season_selected => $_ == $season};
+	}
 	if(defined $season && !($season =~ /^\s*$/gi)){
 		$searchValue =~ s/(tvshow-\d+-)(\d+)(\.html)/${1}${season}${3}/gi;
 	}
 	$template->param(SEARCHING => 1);
 	$template->param(search_value => escapeHTML($searchValue));
+	$template->param(seasons=>\@seasonList);
+	
+
 	my $downloadLink = escapeHTML($searchValue);
 	$downloadLink =~ s/tvshow/download/gi;
 	$downloadLink =~ s/\./-fr\./gi;
@@ -125,7 +142,7 @@ sub getTvShowList
 	while(<$FH>){
 		chomp;
 		my @datas = split '@';
-		push @tvShowList, {"cat_value" => $datas[1], "cat_label" => $datas[0]};
+		push @tvShowList, {"cat_value" => $datas[1], "cat_label" => $datas[0], "selected" => $datas[1] eq $searchValue};
 	}
 	close $FH;
 	return \@tvShowList;
